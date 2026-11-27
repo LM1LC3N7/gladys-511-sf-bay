@@ -72,3 +72,7 @@
 - **Checked**: `gi ci` (Prettier, ESLint, Node 24 and 22, Docker, store validator), the suite 20 times under
   `node:22-alpine` (TAP reporter), `npm audit --omit=dev` clean, `gi install` in the sandbox Gladys (RUNNING, no request
   without a token; container removed afterwards). Never run against the live 511 API with a token.
+
+## Next patch
+
+- Review minors: see `_lots/lot25/reviews/511-sf-bay-r2.md` (4 trous de test : niveau remis à 0, plafond 2 h, filtre, crash en vol ; Header.Timestamp absent ou 0 pour un opérateur calme, voir ALERTS_STALE).
