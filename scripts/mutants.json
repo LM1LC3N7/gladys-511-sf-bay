@@ -1,0 +1,272 @@
+[
+  {
+    "name": "quota: a request beyond the budget is skipped",
+    "file": "src/app.js",
+    "from": "if (quotaWait > QUOTA_WAIT_MAX) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "quota: a request waits for a free slot",
+    "file": "src/app.js",
+    "from": "const wait = Math.max(gap, quotaWait);",
+    "to": "const wait = Math.max(gap, 0);"
+  },
+  {
+    "name": "requests 2 s apart",
+    "file": "src/app.js",
+    "from": "const gap = this.lastRequestMono + REQUEST_GAP - mono;",
+    "to": "const gap = 0;"
+  },
+  {
+    "name": "quota: every request counted",
+    "file": "src/app.js",
+    "from": "      this.quota.take(mono);\n",
+    "to": "\n"
+  },
+  {
+    "name": "quota: /data written before the request leaves",
+    "file": "src/app.js",
+    "from": "      await this.persist();\n      if (gen !== this.gen) return null;\n      return getJson",
+    "to": "      if (gen !== this.gen) return null;\n      return getJson"
+  },
+  {
+    "name": "a pause holds a queued request",
+    "file": "src/app.js",
+    "from": "if (this.pausedFor() > 0) return { ok: false, kind: 'paused' };",
+    "to": ""
+  },
+  {
+    "name": "a 429 pauses every read",
+    "file": "src/app.js",
+    "from": "result.kind === 'rate' || (pausing",
+    "to": "false || (pausing"
+  },
+  {
+    "name": "a 5xx of the departures pauses every read",
+    "file": "src/app.js",
+    "from": "(pausing && result.kind === 'server')",
+    "to": "false"
+  },
+  {
+    "name": "Retry-After lengthens the pause",
+    "file": "src/app.js",
+    "from": "if (Number.isFinite(result.retryAfter) && result.retryAfter > delay) delay = result.retryAfter;",
+    "to": ""
+  },
+  {
+    "name": "the pause of /data holds after a restart",
+    "file": "src/app.js",
+    "from": "if (pause && isTime(pause.until) && pause.until > wall && pause.until - wall <= PAUSE_MAX) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "a 401 of the departures refuses the token",
+    "file": "src/app.js",
+    "from": "if (answer.kind === 'auth') {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "the refusal of /data holds after a restart",
+    "file": "src/app.js",
+    "from": "this.refusedHash === this.keyHash || this.persisted.refused?.print === print;",
+    "to": "this.refusedHash === this.keyHash;"
+  },
+  {
+    "name": "the token refused in this process is not tried again on a save",
+    "file": "src/app.js",
+    "from": "if (saved && this.refusedHash !== this.keyHash) {",
+    "to": "if (saved) {"
+  },
+  {
+    "name": "no departure only for a confirmed stop",
+    "file": "src/app.js",
+    "from": "if (departures.length === 0 && !this.persisted.stops[this.stopPrint(stop)]?.confirmed) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "a clock-skewed answer is not used",
+    "file": "src/app.js",
+    "from": "if (Math.abs(at - this.now()) > CLOCK_SKEW) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "/data unreadable: one interval first",
+    "file": "src/app.js",
+    "from": "if (!this.dataTells) return this.startMono + every;",
+    "to": ""
+  },
+  {
+    "name": "a future last read in /data is not believed",
+    "file": "src/app.js",
+    "from": "if (lastAt > wall) return mono + every;",
+    "to": ""
+  },
+  {
+    "name": "a restart never reads sooner than the interval",
+    "file": "src/app.js",
+    "from": "return mono + Math.max(0, lastAt + every - wall);",
+    "to": "return mono;"
+  },
+  {
+    "name": "a 404 stop waits 30 min",
+    "file": "src/app.js",
+    "from": "if (retry !== undefined && retry > mono) continue;",
+    "to": ""
+  },
+  {
+    "name": "no alerts request while the lines are unknown",
+    "file": "src/app.js",
+    "from": "if (known.length === 0) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "a failed alerts read is spaced out, doubled",
+    "file": "src/app.js",
+    "from": "const delay = Math.min(every * 2 ** (level - 1), Math.max(every, ALERTS_RETRY_MAX));",
+    "to": "const delay = every;"
+  },
+  {
+    "name": "a stale alerts feed is not used",
+    "file": "src/app.js",
+    "from": "if (read.at !== null && at - read.at > ALERTS_STALE) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "nothing published for a device not created",
+    "file": "src/app.js",
+    "from": "if (!this.isCreated(ids)) return;",
+    "to": ""
+  },
+  {
+    "name": "plan: the interval lengthened for the quota",
+    "file": "src/quota.js",
+    "from": "while (stops * roundsPerHour(depEvery) > left && depEvery < 60) depEvery += 1;",
+    "to": ""
+  },
+  {
+    "name": "plan: 90 % of the limit",
+    "file": "src/quota.js",
+    "from": "const budget = Math.floor(hourlyLimit * BUDGET_SHARE);",
+    "to": "const budget = hourlyLimit;"
+  },
+  {
+    "name": "plan: alerts a third of the budget",
+    "file": "src/quota.js",
+    "from": "while (agencies * roundsPerHour(alertsEvery) > share && alertsEvery < 60) alertsEvery += 1;",
+    "to": ""
+  },
+  {
+    "name": "quota: a future time of /data counts as now",
+    "file": "src/quota.js",
+    "from": "starts.push(mono - Math.max(0, age));",
+    "to": "starts.push(mono - age);"
+  },
+  {
+    "name": "quota: the window is an hour",
+    "file": "src/quota.js",
+    "from": "this.starts[0] <= mono - QUOTA_WINDOW",
+    "to": "this.starts[0] <= mono - QUOTA_WINDOW / 2"
+  },
+  {
+    "name": "one unreadable visit refuses the answer",
+    "file": "src/siri.js",
+    "from": "if (!visit) return { unreadable: true };",
+    "to": "if (!visit) continue;"
+  },
+  {
+    "name": "a time present must be readable",
+    "file": "src/siri.js",
+    "from": "if (time === null) return null;",
+    "to": "if (time === null) continue;"
+  },
+  {
+    "name": "Status false refuses the answer",
+    "file": "src/siri.js",
+    "from": "if (pick(smd, 'Status') === false || pick(delivery, 'Status') === false) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "selector: the agency must match",
+    "file": "src/siri.js",
+    "from": "if (agency !== null && !same(agency, stop.agency)) return false;",
+    "to": ""
+  },
+  {
+    "name": "selector: an empty selector names nothing",
+    "file": "src/siri.js",
+    "from": "if (agency === null && route === null && stopId === null && tripRoute === null) return false;",
+    "to": ""
+  },
+  {
+    "name": "alert not started yet",
+    "file": "src/siri.js",
+    "from": "(p.start === null || p.start <= at)",
+    "to": "(true)"
+  },
+  {
+    "name": "visits bounded",
+    "file": "src/siri.js",
+    "from": "visits.length + list.length > MAX_VISITS",
+    "to": "false"
+  },
+  {
+    "name": "the BOM removed",
+    "file": "src/api.js",
+    "from": "json = JSON.parse(stripBom(text));",
+    "to": "json = JSON.parse(text);"
+  },
+  {
+    "name": "a declared oversized body refused",
+    "file": "src/api.js",
+    "from": "if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "a streamed oversized body cut",
+    "file": "src/api.js",
+    "from": "if (size > max) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "401 is its own kind",
+    "file": "src/api.js",
+    "from": "if (response.status === 401) return { ok: false, kind: 'auth', status: 401, ...base };",
+    "to": ""
+  },
+  {
+    "name": "requests bounded to 20 s",
+    "file": "src/api.js",
+    "from": "  }, REQUEST_TIMEOUT);",
+    "to": "  }, REQUEST_TIMEOUT * 10);"
+  },
+  {
+    "name": "the same stop twice refused",
+    "file": "src/config.js",
+    "from": "if (seen.has(id)) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "the token pattern",
+    "file": "src/config.js",
+    "from": "!KEY_PATTERN.test(source.api_key.trim())",
+    "to": "false"
+  },
+  {
+    "name": "timers never infinite",
+    "file": "src/app.js",
+    "from": "if (!Number.isFinite(ms)) return TIMER_MAX;",
+    "to": "if (!Number.isFinite(ms)) return ms;"
+  },
+  {
+    "name": "a second at least between rounds",
+    "file": "src/app.js",
+    "from": "this.arm(Math.max(SECOND, this.nextDelay(this.monotonic())), gen);",
+    "to": "this.arm(this.nextDelay(this.monotonic()), gen);"
+  },
+  {
+    "name": "a skipped alerts read is not due at once",
+    "file": "src/app.js",
+    "from": "return Math.max(start + MINUTE, this.depDueMono ?? 0);",
+    "to": "return start;"
+  }
+]

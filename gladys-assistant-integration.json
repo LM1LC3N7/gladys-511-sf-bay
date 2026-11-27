@@ -1,177 +1,568 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "SF Bay Area Transit",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Unofficial. Next departures and alerts at your SF Bay Area stops, data provided by 511.org.",
+    "fr": "Non officiel. Prochains départs et alertes à vos arrêts de la baie de San Francisco (511.org)."
   },
-  "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
-  "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "version": "0.1.0",
+  "docker_image": "ghcr.io/lm1lc3n7/gladys-511-sf-bay:0.1.0",
+  "gladys_version": ">=5.3.0",
+  "cover_image": "https://raw.githubusercontent.com/LM1LC3N7/gladys-511-sf-bay/main/cover.png",
+  "categories": ["transport"],
+  "transports": ["cloud"],
+  "countries": ["US"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "SF Bay Area transit departures and alerts",
+        "fr": "Départs et alertes des transports de la baie de San Francisco"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "The next departures and the service alerts at up to five stops of the San Francisco Bay Area (Muni, BART, Caltrain, AC Transit, SamTrans, VTA, Golden Gate...), data provided by 511.org. You need a free 511 token (511.org/open-data/token, by e-mail). A token allows 60 requests per hour by default: the integration plans its reads to stay within 90 % of the limit you give, one request per stop and per read, the alerts one request per operator every 15 minutes or more. Each stop is a device. Check 511.org or the operator before you travel: this integration is not an official source and is not endorsed by 511 or MTC.",
+        "fr": "Les prochains départs et les alertes de service à cinq arrêts au plus de la baie de San Francisco (Muni, BART, Caltrain, AC Transit, SamTrans, VTA, Golden Gate…), données fournies par 511.org. Il faut un jeton 511 gratuit (511.org/open-data/token, par e-mail). Un jeton permet 60 requêtes par heure par défaut : l’intégration planifie ses lectures pour rester sous 90 % de la limite indiquée, une requête par arrêt et par lecture, les alertes une requête par opérateur toutes les 15 minutes ou plus. Chaque arrêt est un appareil. Vérifiez sur 511.org ou auprès de l’opérateur avant de partir : cette intégration n’est pas une source officielle, ni approuvée par 511 ou la MTC."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://511.org/open-data/token",
+          "label": {
+            "en": "Get a free 511 token",
+            "fr": "Obtenir un jeton 511 gratuit"
+          }
+        },
+        {
+          "url": "https://511.org/open-data/transit",
+          "label": {
+            "en": "511 transit data (operators, stop codes)",
+            "fr": "Données transport 511 (opérateurs, codes d’arrêt)"
+          }
+        },
+        {
+          "url": "https://511.org/",
+          "label": {
+            "en": "Data provided by 511.org",
+            "fr": "Données fournies par 511.org"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "api_key",
+      "type": "secret",
+      "label": {
+        "en": "511 token",
+        "fr": "Jeton 511"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "description": {
+        "en": "Your 511 Open Data token (the api_key of the e-mail from 511). Kept by Gladys in its database, never shown again, sent only to 511.org.",
+        "fr": "Votre jeton 511 Open Data (l’api_key de l’e-mail de 511). Gardé par Gladys dans sa base, jamais réaffiché, envoyé seulement à 511.org."
+      },
+      "required": true
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
+      "key": "language",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "label": {
+        "en": "Language of the texts",
+        "fr": "Langue des textes"
+      },
+      "description": {
+        "en": "Language of the device names, the departure texts and the status. The alerts come in this language when the operator gives it, else in English.",
+        "fr": "Langue des noms d’appareils, des textes de départ et du statut. Les alertes viennent dans cette langue si l’opérateur la fournit, sinon en anglais."
+      },
       "required": false,
-      "default": "celsius",
+      "default": "en",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
+      "key": "refresh_minutes",
       "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "label": {
+        "en": "Read interval of the departures (minutes)",
+        "fr": "Intervalle de lecture des départs (minutes)"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "From 2 to 60 minutes. One request per stop at each read. Lengthened automatically when the stops and the alerts would not fit in the hourly limit (the status says so).",
+        "fr": "De 2 à 60 minutes. Une requête par arrêt à chaque lecture. Allongé automatiquement si les arrêts et les alertes ne tiennent pas dans la limite horaire (le statut le dit)."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": 5,
+      "min": 2,
+      "max": 60
+    },
+    {
+      "key": "hourly_limit",
+      "type": "number",
+      "label": {
+        "en": "Hourly limit of your token",
+        "fr": "Limite horaire de votre jeton"
+      },
+      "description": {
+        "en": "Requests per hour allowed to your token: 60 unless 511 raised it for you (20 to 1000). The integration never sends more than 90 % of it in any hour.",
+        "fr": "Requêtes par heure permises à votre jeton : 60 sauf si 511 l’a relevée pour vous (20 à 1000). L’intégration n’en envoie jamais plus de 90 % en une heure."
+      },
+      "required": false,
+      "default": 60,
+      "min": 20,
+      "max": 1000
+    },
+    {
+      "key": "alerts",
+      "type": "select",
+      "label": {
+        "en": "Service alerts",
+        "fr": "Alertes de service"
+      },
+      "description": {
+        "en": "Read the service alerts of the operators of your stops (one request per operator every 15 minutes or more).",
+        "fr": "Lire les alertes de service des opérateurs de vos arrêts (une requête par opérateur toutes les 15 minutes ou plus)."
+      },
+      "required": false,
+      "default": "on",
+      "options": [
+        {
+          "value": "on",
+          "label": {
+            "en": "Yes",
+            "fr": "Oui"
+          }
+        },
+        {
+          "value": "off",
+          "label": {
+            "en": "No",
+            "fr": "Non"
+          }
+        }
+      ]
+    },
+    {
+      "key": "stop1",
+      "type": "section",
+      "label": {
+        "en": "Stop 1",
+        "fr": "Arrêt 1"
+      },
+      "description": {
+        "en": "Required. An operator id and a stop code of 511. The stop code is on the sign of the stop or in the stop list of the operator on 511.org (e.g. SF 15553 for Muni, BA for BART, CT for Caltrain, AC for AC Transit).",
+        "fr": "Obligatoire. Un identifiant d’opérateur et un code d’arrêt de 511. Le code est sur le panneau de l’arrêt ou dans la liste des arrêts de l’opérateur sur 511.org (ex. SF 15553 pour Muni, BA pour BART, CT pour Caltrain, AC pour AC Transit)."
+      }
+    },
+    {
+      "key": "stop1_name",
+      "type": "string",
+      "label": {
+        "en": "Name",
+        "fr": "Nom"
+      },
+      "description": {
+        "en": "Name of the device in Gladys (60 characters at most). Empty: the operator and the stop code.",
+        "fr": "Nom de l’appareil dans Gladys (60 caractères au plus). Vide : l’opérateur et le code de l’arrêt."
+      },
+      "placeholder": {
+        "en": "e.g. Bus to work",
+        "fr": "ex. Bus du travail"
+      },
+      "required": false
+    },
+    {
+      "key": "stop1_agency",
+      "type": "string",
+      "label": {
+        "en": "Operator id",
+        "fr": "Identifiant de l’opérateur"
+      },
+      "description": {
+        "en": "The 511 id of the operator: SF (Muni), BA (BART), CT (Caltrain), AC (AC Transit), SM (SamTrans), SC (VTA), GG (Golden Gate)...",
+        "fr": "L’identifiant 511 de l’opérateur : SF (Muni), BA (BART), CT (Caltrain), AC (AC Transit), SM (SamTrans), SC (VTA), GG (Golden Gate)…"
+      },
+      "placeholder": {
+        "en": "e.g. SF",
+        "fr": "ex. SF"
+      },
+      "required": true
+    },
+    {
+      "key": "stop1_code",
+      "type": "string",
+      "label": {
+        "en": "Stop code",
+        "fr": "Code de l’arrêt"
+      },
+      "description": {
+        "en": "The stop code of 511 (letters, digits, - and _); a parent station gives every platform.",
+        "fr": "Le code d’arrêt de 511 (lettres, chiffres, - et _) ; une station parente donne tous ses quais."
+      },
+      "placeholder": {
+        "en": "e.g. 15553",
+        "fr": "ex. 15553"
+      },
+      "required": true
+    },
+    {
+      "key": "stop1_lines",
+      "type": "string",
+      "label": {
+        "en": "Lines (optional)",
+        "fr": "Lignes (facultatif)"
+      },
+      "description": {
+        "en": "Only these lines, comma separated (10 at most), as 511 names them (e.g. 14, 14R). Empty: every line.",
+        "fr": "Seulement ces lignes, séparées par des virgules (10 au plus), comme 511 les nomme (ex. 14, 14R). Vide : toutes les lignes."
+      },
+      "placeholder": {
+        "en": "e.g. 14, 49",
+        "fr": "ex. 14, 49"
+      },
+      "required": false
+    },
+    {
+      "key": "stop2",
+      "type": "section",
+      "label": {
+        "en": "Stop 2",
+        "fr": "Arrêt 2"
+      },
+      "description": {
+        "en": "Optional. An operator id and a stop code of 511. The stop code is on the sign of the stop or in the stop list of the operator on 511.org (e.g. SF 15553 for Muni, BA for BART, CT for Caltrain, AC for AC Transit).",
+        "fr": "Facultatif. Un identifiant d’opérateur et un code d’arrêt de 511. Le code est sur le panneau de l’arrêt ou dans la liste des arrêts de l’opérateur sur 511.org (ex. SF 15553 pour Muni, BA pour BART, CT pour Caltrain, AC pour AC Transit)."
+      }
+    },
+    {
+      "key": "stop2_name",
+      "type": "string",
+      "label": {
+        "en": "Name",
+        "fr": "Nom"
+      },
+      "description": {
+        "en": "Name of the device in Gladys (60 characters at most). Empty: the operator and the stop code.",
+        "fr": "Nom de l’appareil dans Gladys (60 caractères au plus). Vide : l’opérateur et le code de l’arrêt."
+      },
+      "placeholder": {
+        "en": "e.g. Bus to work",
+        "fr": "ex. Bus du travail"
+      },
+      "required": false
+    },
+    {
+      "key": "stop2_agency",
+      "type": "string",
+      "label": {
+        "en": "Operator id",
+        "fr": "Identifiant de l’opérateur"
+      },
+      "description": {
+        "en": "The 511 id of the operator: SF (Muni), BA (BART), CT (Caltrain), AC (AC Transit), SM (SamTrans), SC (VTA), GG (Golden Gate)...",
+        "fr": "L’identifiant 511 de l’opérateur : SF (Muni), BA (BART), CT (Caltrain), AC (AC Transit), SM (SamTrans), SC (VTA), GG (Golden Gate)…"
+      },
+      "placeholder": {
+        "en": "e.g. SF",
+        "fr": "ex. SF"
+      },
+      "required": false
+    },
+    {
+      "key": "stop2_code",
+      "type": "string",
+      "label": {
+        "en": "Stop code",
+        "fr": "Code de l’arrêt"
+      },
+      "description": {
+        "en": "The stop code of 511 (letters, digits, - and _); a parent station gives every platform.",
+        "fr": "Le code d’arrêt de 511 (lettres, chiffres, - et _) ; une station parente donne tous ses quais."
+      },
+      "placeholder": {
+        "en": "e.g. 15553",
+        "fr": "ex. 15553"
+      },
+      "required": false
+    },
+    {
+      "key": "stop2_lines",
+      "type": "string",
+      "label": {
+        "en": "Lines (optional)",
+        "fr": "Lignes (facultatif)"
+      },
+      "description": {
+        "en": "Only these lines, comma separated (10 at most), as 511 names them (e.g. 14, 14R). Empty: every line.",
+        "fr": "Seulement ces lignes, séparées par des virgules (10 au plus), comme 511 les nomme (ex. 14, 14R). Vide : toutes les lignes."
+      },
+      "placeholder": {
+        "en": "e.g. 14, 49",
+        "fr": "ex. 14, 49"
+      },
+      "required": false
+    },
+    {
+      "key": "stop3",
+      "type": "section",
+      "label": {
+        "en": "Stop 3",
+        "fr": "Arrêt 3"
+      },
+      "description": {
+        "en": "Optional. An operator id and a stop code of 511. The stop code is on the sign of the stop or in the stop list of the operator on 511.org (e.g. SF 15553 for Muni, BA for BART, CT for Caltrain, AC for AC Transit).",
+        "fr": "Facultatif. Un identifiant d’opérateur et un code d’arrêt de 511. Le code est sur le panneau de l’arrêt ou dans la liste des arrêts de l’opérateur sur 511.org (ex. SF 15553 pour Muni, BA pour BART, CT pour Caltrain, AC pour AC Transit)."
+      }
+    },
+    {
+      "key": "stop3_name",
+      "type": "string",
+      "label": {
+        "en": "Name",
+        "fr": "Nom"
+      },
+      "description": {
+        "en": "Name of the device in Gladys (60 characters at most). Empty: the operator and the stop code.",
+        "fr": "Nom de l’appareil dans Gladys (60 caractères au plus). Vide : l’opérateur et le code de l’arrêt."
+      },
+      "placeholder": {
+        "en": "e.g. Bus to work",
+        "fr": "ex. Bus du travail"
+      },
+      "required": false
+    },
+    {
+      "key": "stop3_agency",
+      "type": "string",
+      "label": {
+        "en": "Operator id",
+        "fr": "Identifiant de l’opérateur"
+      },
+      "description": {
+        "en": "The 511 id of the operator: SF (Muni), BA (BART), CT (Caltrain), AC (AC Transit), SM (SamTrans), SC (VTA), GG (Golden Gate)...",
+        "fr": "L’identifiant 511 de l’opérateur : SF (Muni), BA (BART), CT (Caltrain), AC (AC Transit), SM (SamTrans), SC (VTA), GG (Golden Gate)…"
+      },
+      "placeholder": {
+        "en": "e.g. SF",
+        "fr": "ex. SF"
+      },
+      "required": false
+    },
+    {
+      "key": "stop3_code",
+      "type": "string",
+      "label": {
+        "en": "Stop code",
+        "fr": "Code de l’arrêt"
+      },
+      "description": {
+        "en": "The stop code of 511 (letters, digits, - and _); a parent station gives every platform.",
+        "fr": "Le code d’arrêt de 511 (lettres, chiffres, - et _) ; une station parente donne tous ses quais."
+      },
+      "placeholder": {
+        "en": "e.g. 15553",
+        "fr": "ex. 15553"
+      },
+      "required": false
+    },
+    {
+      "key": "stop3_lines",
+      "type": "string",
+      "label": {
+        "en": "Lines (optional)",
+        "fr": "Lignes (facultatif)"
+      },
+      "description": {
+        "en": "Only these lines, comma separated (10 at most), as 511 names them (e.g. 14, 14R). Empty: every line.",
+        "fr": "Seulement ces lignes, séparées par des virgules (10 au plus), comme 511 les nomme (ex. 14, 14R). Vide : toutes les lignes."
+      },
+      "placeholder": {
+        "en": "e.g. 14, 49",
+        "fr": "ex. 14, 49"
+      },
+      "required": false
+    },
+    {
+      "key": "stop4",
+      "type": "section",
+      "label": {
+        "en": "Stop 4",
+        "fr": "Arrêt 4"
+      },
+      "description": {
+        "en": "Optional. An operator id and a stop code of 511. The stop code is on the sign of the stop or in the stop list of the operator on 511.org (e.g. SF 15553 for Muni, BA for BART, CT for Caltrain, AC for AC Transit).",
+        "fr": "Facultatif. Un identifiant d’opérateur et un code d’arrêt de 511. Le code est sur le panneau de l’arrêt ou dans la liste des arrêts de l’opérateur sur 511.org (ex. SF 15553 pour Muni, BA pour BART, CT pour Caltrain, AC pour AC Transit)."
+      }
+    },
+    {
+      "key": "stop4_name",
+      "type": "string",
+      "label": {
+        "en": "Name",
+        "fr": "Nom"
+      },
+      "description": {
+        "en": "Name of the device in Gladys (60 characters at most). Empty: the operator and the stop code.",
+        "fr": "Nom de l’appareil dans Gladys (60 caractères au plus). Vide : l’opérateur et le code de l’arrêt."
+      },
+      "placeholder": {
+        "en": "e.g. Bus to work",
+        "fr": "ex. Bus du travail"
+      },
+      "required": false
+    },
+    {
+      "key": "stop4_agency",
+      "type": "string",
+      "label": {
+        "en": "Operator id",
+        "fr": "Identifiant de l’opérateur"
+      },
+      "description": {
+        "en": "The 511 id of the operator: SF (Muni), BA (BART), CT (Caltrain), AC (AC Transit), SM (SamTrans), SC (VTA), GG (Golden Gate)...",
+        "fr": "L’identifiant 511 de l’opérateur : SF (Muni), BA (BART), CT (Caltrain), AC (AC Transit), SM (SamTrans), SC (VTA), GG (Golden Gate)…"
+      },
+      "placeholder": {
+        "en": "e.g. SF",
+        "fr": "ex. SF"
+      },
+      "required": false
+    },
+    {
+      "key": "stop4_code",
+      "type": "string",
+      "label": {
+        "en": "Stop code",
+        "fr": "Code de l’arrêt"
+      },
+      "description": {
+        "en": "The stop code of 511 (letters, digits, - and _); a parent station gives every platform.",
+        "fr": "Le code d’arrêt de 511 (lettres, chiffres, - et _) ; une station parente donne tous ses quais."
+      },
+      "placeholder": {
+        "en": "e.g. 15553",
+        "fr": "ex. 15553"
+      },
+      "required": false
+    },
+    {
+      "key": "stop4_lines",
+      "type": "string",
+      "label": {
+        "en": "Lines (optional)",
+        "fr": "Lignes (facultatif)"
+      },
+      "description": {
+        "en": "Only these lines, comma separated (10 at most), as 511 names them (e.g. 14, 14R). Empty: every line.",
+        "fr": "Seulement ces lignes, séparées par des virgules (10 au plus), comme 511 les nomme (ex. 14, 14R). Vide : toutes les lignes."
+      },
+      "placeholder": {
+        "en": "e.g. 14, 49",
+        "fr": "ex. 14, 49"
+      },
+      "required": false
+    },
+    {
+      "key": "stop5",
+      "type": "section",
+      "label": {
+        "en": "Stop 5",
+        "fr": "Arrêt 5"
+      },
+      "description": {
+        "en": "Optional. An operator id and a stop code of 511. The stop code is on the sign of the stop or in the stop list of the operator on 511.org (e.g. SF 15553 for Muni, BA for BART, CT for Caltrain, AC for AC Transit).",
+        "fr": "Facultatif. Un identifiant d’opérateur et un code d’arrêt de 511. Le code est sur le panneau de l’arrêt ou dans la liste des arrêts de l’opérateur sur 511.org (ex. SF 15553 pour Muni, BA pour BART, CT pour Caltrain, AC pour AC Transit)."
+      }
+    },
+    {
+      "key": "stop5_name",
+      "type": "string",
+      "label": {
+        "en": "Name",
+        "fr": "Nom"
+      },
+      "description": {
+        "en": "Name of the device in Gladys (60 characters at most). Empty: the operator and the stop code.",
+        "fr": "Nom de l’appareil dans Gladys (60 caractères au plus). Vide : l’opérateur et le code de l’arrêt."
+      },
+      "placeholder": {
+        "en": "e.g. Bus to work",
+        "fr": "ex. Bus du travail"
+      },
+      "required": false
+    },
+    {
+      "key": "stop5_agency",
+      "type": "string",
+      "label": {
+        "en": "Operator id",
+        "fr": "Identifiant de l’opérateur"
+      },
+      "description": {
+        "en": "The 511 id of the operator: SF (Muni), BA (BART), CT (Caltrain), AC (AC Transit), SM (SamTrans), SC (VTA), GG (Golden Gate)...",
+        "fr": "L’identifiant 511 de l’opérateur : SF (Muni), BA (BART), CT (Caltrain), AC (AC Transit), SM (SamTrans), SC (VTA), GG (Golden Gate)…"
+      },
+      "placeholder": {
+        "en": "e.g. SF",
+        "fr": "ex. SF"
+      },
+      "required": false
+    },
+    {
+      "key": "stop5_code",
+      "type": "string",
+      "label": {
+        "en": "Stop code",
+        "fr": "Code de l’arrêt"
+      },
+      "description": {
+        "en": "The stop code of 511 (letters, digits, - and _); a parent station gives every platform.",
+        "fr": "Le code d’arrêt de 511 (lettres, chiffres, - et _) ; une station parente donne tous ses quais."
+      },
+      "placeholder": {
+        "en": "e.g. 15553",
+        "fr": "ex. 15553"
+      },
+      "required": false
+    },
+    {
+      "key": "stop5_lines",
+      "type": "string",
+      "label": {
+        "en": "Lines (optional)",
+        "fr": "Lignes (facultatif)"
+      },
+      "description": {
+        "en": "Only these lines, comma separated (10 at most), as 511 names them (e.g. 14, 14R). Empty: every line.",
+        "fr": "Seulement ces lignes, séparées par des virgules (10 au plus), comme 511 les nomme (ex. 14, 14R). Vide : toutes les lignes."
+      },
+      "placeholder": {
+        "en": "e.g. 14, 49",
+        "fr": "ex. 14, 49"
+      },
+      "required": false
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
-    }
-  ],
-  "scene_triggers": [
-    {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
-      "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+      "key": "test",
+      "label": {
+        "en": "Show the last reads",
+        "fr": "Voir les dernières lectures"
       },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
-        }
-      ],
-      "variables": [
-        {
-          "key": "target",
-          "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
-        }
-      ]
-    }
-  ],
-  "scene_actions": [
-    {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
-      },
-      "timeout_seconds": 15,
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ],
-      "outputs": [
-        {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
-        }
-      ]
-    }
-  ],
-  "widgets": [
-    {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
-      },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "timeout_seconds": 10
     }
   ]
 }
