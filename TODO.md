@@ -2,10 +2,9 @@
 
 ## Before announcing
 
-- [ ] Louis (review r1, B2, decision pending, nothing renamed): the repository name `gladys-511-sf-bay` holds "511": section 5.c of the 511 Data Disseminator Agreement
-      forbids "511" in the naming or branding of a data dissemination product. The manifest name is "SF Bay Area
-      Transit" and the docs say the integration does not use 511 as a brand; renaming the repository (and the image)
-      before the first release would remove the doubt.
+- [x] Repository renamed `gladys-511-sf-bay` → `gladys-sf-bay-transit` before the first release (decision of Louis,
+      2026-11-27): section 5.c of the 511 Data Disseminator Agreement forbids "511" in a product name.
+- [ ] Section 2.g: notify MTC within 30 days of the launch (message prepared, sent by Louis).
 - [ ] Try it with a real 511 token: the shape of a StopMonitoring answer of the live API (`ServiceDelivery` at the
       top, lists, `ExpectedDepartureTime` empty or null when not monitored), the alerts feed in JSON (key case,
       `Header.Timestamp` refresh), the 429 of the quota (status, `Retry-After`), the BOM, the operator ids of the
@@ -34,7 +33,7 @@
 ## Decisions
 
 - **Version 0.1.0** set by hand in package.json, package-lock.json, the manifest and its `docker_image`
-  (`ghcr.io/lm1lc3n7/gladys-511-sf-bay:0.1.0`).
+  (`ghcr.io/lm1lc3n7/gladys-sf-bay-transit:0.1.0`).
 - **SDK `^0.16.1`**, the latest published (npm registry, 2026-11-27). `gladys_version >=5.3.0` for `countries: ["US"]`.
 - **Quota** (511.org/open-data/transit, read on 2026-11-27: "60 requests per 3600 seconds" per token by default,
   more on request): the user types the limit of their token (20 to 1000, default 60); the plan keeps the worst

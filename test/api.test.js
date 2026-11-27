@@ -57,7 +57,7 @@ test('a JSON answer with a UTF-8 byte order mark is read; the User-Agent is the 
   assert.equal(requests[0].headers['user-agent'], USER_AGENT);
   assert.match(
     USER_AGENT,
-    /^gladys-511-sf-bay\/\d+\.\d+\.\d+ \(\+https:\/\/github\.com\/LM1LC3N7\/gladys-511-sf-bay\)$/,
+    /^gladys-sf-bay-transit\/\d+\.\d+\.\d+ \(\+https:\/\/github\.com\/LM1LC3N7\/gladys-sf-bay-transit\)$/,
   );
   assert.equal(stripBom('﻿{}'), '{}');
   assert.equal(stripBom('{}'), '{}');

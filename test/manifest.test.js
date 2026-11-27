@@ -56,12 +56,12 @@ test('the store basics; one version in the four places, never pinned', () => {
   assert.equal(manifest.manifest_version, 1);
   assert.equal(manifest.type, 'device');
   assert.match(manifest.version, SEMVER);
-  assert.equal(manifest.docker_image, `ghcr.io/lm1lc3n7/gladys-511-sf-bay:${manifest.version}`);
+  assert.equal(manifest.docker_image, `ghcr.io/lm1lc3n7/gladys-sf-bay-transit:${manifest.version}`);
   assert.equal(manifest.version, pkg.version);
   assert.equal(lock.version, pkg.version);
   assert.equal(lock.packages[''].version, pkg.version);
   assert.equal(lock.name, pkg.name);
-  assert.equal(pkg.name, 'gladys-511-sf-bay');
+  assert.equal(pkg.name, 'gladys-sf-bay-transit');
   assert.equal(pkg.license, 'Apache-2.0');
   assert.equal(pkg.scripts.test, 'node --test --test-timeout=60000');
   assert.match(
@@ -78,7 +78,7 @@ test('the store basics; one version in the four places, never pinned', () => {
   assert.equal(manifest.location, undefined, 'the house location is never asked');
   assert.match(
     manifest.cover_image,
-    /^https:\/\/raw\.githubusercontent\.com\/LM1LC3N7\/gladys-511-sf-bay\//,
+    /^https:\/\/raw\.githubusercontent\.com\/LM1LC3N7\/gladys-sf-bay-transit\//,
   );
   for (const lang of ['en', 'fr']) {
     const length = manifest.description[lang].length;

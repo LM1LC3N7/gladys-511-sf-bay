@@ -14,7 +14,7 @@ export const VERSION = JSON.parse(
 export const API_BASE = 'https://api.511.org/transit';
 
 /** An honest User-Agent naming the integration, never a browser's. */
-export const USER_AGENT = `gladys-511-sf-bay/${VERSION} (+https://github.com/LM1LC3N7/gladys-511-sf-bay)`;
+export const USER_AGENT = `gladys-sf-bay-transit/${VERSION} (+https://github.com/LM1LC3N7/gladys-sf-bay-transit)`;
 
 export const SECOND = 1000;
 export const MINUTE = 60 * SECOND;

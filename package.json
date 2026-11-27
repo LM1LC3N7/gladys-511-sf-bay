@@ -1,5 +1,5 @@
 {
-  "name": "gladys-511-sf-bay",
+  "name": "gladys-sf-bay-transit",
   "version": "0.1.0",
   "private": true,
   "description": "Unofficial San Francisco Bay Area transit integration for Gladys Assistant: next departures at your stops (Muni, BART, Caltrain, AC Transit...) and service alerts, data provided by 511.org.",
@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LM1LC3N7/gladys-511-sf-bay.git"
+    "url": "git+https://github.com/LM1LC3N7/gladys-sf-bay-transit.git"
   },
   "dependencies": {
     "@gladysassistant/integration-sdk": "^0.16.1"

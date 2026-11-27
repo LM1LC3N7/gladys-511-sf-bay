@@ -1,4 +1,4 @@
-// Generates cover.png (800x534) for gladys-511-sf-bay: plain Node, no dependency.
+// Generates cover.png (800x534) for gladys-sf-bay-transit: plain Node, no dependency.
 // A generic silver suspension bridge over the bay at dusk and a departure board (two departures
 // and an alert in amber), on a gradient (no brand logo, no 511 mark).
 // Usage: node scripts/cover.mjs cover.png
