@@ -517,3 +517,66 @@ test('an unconfirmed stop (lines unknown) never spins the rounds', async (t) => 
   assert.equal(api.count('alerts'), 0);
   assert.ok(ticks <= 30, String(ticks));
 });
+
+test('alerts in 500 and a restart loop: one alerts request per interval, back-off kept in /data', async () => {
+  const store = createMemoryStore();
+  const api = createApi((call, a) =>
+    call.kind === 'alerts' ? errorAnswer(a, 500) : defaultWorld(call, a),
+  );
+  for (let i = 0; i < 10; i += 1) {
+    const env = await setup({ store, api, start: START + i * 40 * SECOND });
+    await env.app.connected();
+    await env.wait(30 * SECOND);
+    await env.app.stop();
+  }
+  assert.equal(api.count('alerts'), 1, 'never sooner than the interval after a restart');
+  assert.ok(store.data.alertsAt.SF >= START);
+  assert.equal(store.data.alertsLevel.SF, 1);
+  // The next one after 15 min (level 1), then 30 min (level 2), kept across restarts too.
+  const later = await setup({ store, api, start: START + 16 * MINUTE });
+  await later.app.connected();
+  await later.wait(30 * SECOND);
+  await later.app.stop();
+  assert.equal(api.count('alerts'), 2);
+  assert.equal(store.data.alertsLevel.SF, 2);
+  const again = await setup({ store, api, start: START + 30 * MINUTE });
+  await again.app.connected();
+  await again.wait(10 * MINUTE);
+  await again.app.stop();
+  assert.equal(api.count('alerts'), 2, 'level 2: 30 min after the last attempt');
+});
+
+test('an alerts feed without a header time is never "no alert"', async (t) => {
+  const api = createApi((call, a) =>
+    call.kind === 'alerts'
+      ? { Header: { GtfsRealtimeVersion: '1.0' }, Entities: [] }
+      : defaultWorld(call, a),
+  );
+  const env = await setup({ api });
+  t.after(() => env.app.stop());
+  await env.begin();
+  assert.equal(api.count('alerts'), 1);
+  assert.equal(env.text(F(1, 'alerts')), undefined);
+  assert.match(env.status().message.en, /alerts feed without a time/);
+});
+
+test('a line filter that matches no visit, read after read, is said in the status', async (t) => {
+  const env = await setup({ config: { ...HOME, stop1_lines: '99' } });
+  t.after(() => env.app.stop());
+  await env.begin();
+  assert.doesNotMatch(env.status().message.en, /check the line filter/);
+  await env.wait(11 * MINUTE);
+  assert.match(env.status().message.en, /none of the filtered lines in the last 3 reads/);
+  assert.match(env.status().message.fr, /vérifiez le filtre de lignes/);
+});
+
+test('a new token saved is used at once, not at the next interval', async (t) => {
+  const env = await setup();
+  t.after(() => env.app.stop());
+  await env.begin();
+  const before = env.api.count('dep');
+  await env.app.start({ ...HOME, api_key: 'another-token-9876543210' }, { saved: true });
+  await env.wait(10 * SECOND);
+  assert.equal(env.api.count('dep'), before + 1);
+  assert.equal(env.api.calls.at(-1).key, 'another-token-9876543210');
+});

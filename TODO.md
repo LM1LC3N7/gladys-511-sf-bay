@@ -2,7 +2,7 @@
 
 ## Before announcing
 
-- [ ] Louis: the repository name `gladys-511-sf-bay` holds "511": section 5.c of the 511 Data Disseminator Agreement
+- [ ] Louis (review r1, B2, decision pending, nothing renamed): the repository name `gladys-511-sf-bay` holds "511": section 5.c of the 511 Data Disseminator Agreement
       forbids "511" in the naming or branding of a data dissemination product. The manifest name is "SF Bay Area
       Transit" and the docs say the integration does not use 511 as a brand; renaming the repository (and the image)
       before the first release would remove the doubt.
@@ -13,7 +13,7 @@
 - [ ] Install it on a real Gladys 5.3+ and add a stop: device creation, the texts in the dashboard.
 - [ ] Turn on "Private vulnerability reporting" (SECURITY.md points there).
 - [ ] Add the `gladys-assistant-integration` topic to publish in the store (after the first release).
-- [ ] 511 Data Disseminator Agreement 2.h: MTC asks for a documentation of a product using the data within 30 days of
+- [ ] 511 Data Disseminator Agreement 2.g (https://511.org/sites/default/files/2026-04/511_Data_Agreement_Final_2026.pdf): MTC asks for a documentation of a product using the data within 30 days of
       launch (screenshots, URL). Each user is the registered disseminator of their token; whether the integration
       itself should be announced to developerresources@511.org is Louis's call.
 
@@ -22,6 +22,12 @@
 - [ ] `ALERTS_STALE` (6 h): a feed whose `Header.Timestamp` is older than that against the server `Date` is not
       used. If 511 leaves the header time of a quiet operator old, raise it.
 - [ ] Whether a quota answer (429) counts against the quota itself (assumed: every request sent is counted).
+- [ ] **How 511 answers a request over the quota**: the 429 is documented nowhere (neither the specification nor
+      the transit page). If 511 answered 401 instead, a departures read over the quota would be taken as a refused
+      token (reads stopped until a token is saved again). The 90 % plan and the guard make it unlikely; to check with
+      a real token (review r1).
+- [ ] A token changed while the integration is stopped has 1 chance in 256 to match the 8-bit fingerprint of a
+      refused one: it waits for a save of the configuration (review r1, m6).
 - [ ] The RouteId / StopId of the alerts: the same ids as `LineRef` / the stop code of StopMonitoring (assumed), or
       prefixed (`SF:15553` is accepted for the stop).
 
@@ -51,10 +57,15 @@
   in /data, the full hash in memory; a saved token that is not the one refused in this process is always tried once.
 - **Pauses**: 429 pauses every read (Retry-After, else 10 min doubled, 6 h at most); 5xx or another 4xx (but 400 and 404) of the departures pause every read (2 min doubled); 400/404 of a stop: that stop again after 30 min; a failed
   alerts read: that operator again one alerts interval later, doubled, 2 h at most.
+- **Alerts after a restart** (review r1, B1): the time of the attempt and the back-off level of each operator are
+  written to /data before the request leaves; a restart reads them again only after `attempt + back-off`.
+- **Line filter** that matches none of the visits 3 reads in a row: said in the status (review r1, m5).
+- **Alerts feed without a header time**: not used (never "no alert" from a feed of unknown age, review r1, m4).
+- **A new token saved** is read at once (review r1, m6).
 - **Timers**: never armed on a non-finite delay nor longer than 1 h; at least 1 s between two rounds.
 - **No scene trigger** in 0.1.0 (the counters serve the scenes); a "new alert" trigger could come later.
 - **Name**: "SF Bay Area Transit" (no "511" in the brand, agreement 5.c); attribution "data provided by 511.org" in
-  the feature names (as "511.org"), the status, the configuration screen and the docs (5.b).
+  the name of the first feature of each device (word for word, review r1, m3), "(511.org)" on the others, the status, the configuration screen and the docs (5.b).
 - **Mutation** (milestone 1): the 45 mutants of `scripts/mutants.json`, one at a time on a copy of the repository
   (`node scripts/mutants.mjs`, under `memcap`): all killed after three tests were added (request in /data before it
   leaves, timers bounded, a second between rounds).

@@ -15,5 +15,5 @@ the notes of the version's GitHub Release.
 - The next and following departure, the departures within 60 minutes, the
   service alerts in effect and the first alert at up to five stops of the San
   Francisco Bay Area, data provided by 511.org (your own free 511 token).
-- The quota of the token kept: intervals planned within 90 % of the hourly
+- The quota of the token kept (alerts too: their attempt and back-off survive a restart): intervals planned within 90 % of the hourly
   limit, every request counted (also across a restart), 429 and 5xx pauses.

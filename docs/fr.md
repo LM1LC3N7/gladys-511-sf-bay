@@ -67,8 +67,11 @@ L’intégration :
   les premières lectures attendent un intervalle ;
 - arrête toute lecture quand 511 répond **429** : le temps qu’il demande,
   10 minutes au moins (doublées aux suivantes), 6 heures au plus, même après un
-  redémarrage ; une erreur **5xx** des départs met les lectures en pause 2
-  minutes (doublées, 6 heures au plus).
+  redémarrage ; une erreur **5xx** ou un autre refus des départs (403…) met
+  toutes les lectures en pause 2 minutes (doublées, 6 heures au plus) ; une
+  lecture des alertes en échec attend 15 minutes, puis 30, 60, 120 pour cet
+  opérateur seulement, même après un redémarrage (l’heure de la tentative est
+  écrite dans `/data` avant le départ de la requête).
 
 La Découverte, le bouton **Voir les dernières lectures** et l’enregistrement
 d’une configuration inchangée ne lisent jamais 511 (enregistrer à nouveau ne
@@ -76,8 +79,11 @@ fait que réessayer une fois un jeton refusé avant un redémarrage).
 
 ## Ce que contient chaque appareil
 
-Les noms des fonctions finissent par « (511.org) » : l’attribution que 511
-demande, à côté des données.
+Le nom de la fonction **Prochain départ** finit par « (data provided by
+511.org) », les autres par « (511.org) » : l’attribution que 511 demande, mot
+pour mot, à côté des données. Les minutes d’un texte sont comptées à l’heure
+de la lecture : avec un long intervalle, lisez l’heure (`10:03`), qui reste
+juste.
 
 - **Prochain départ** et **Départ suivant** : textes avec la ligne, la
   destination, les minutes d’attente (comptées sur l’heure de la réponse de 511) et l’heure, ex. `14 MISSION → Downtown: 3 min (10:03)` ;
@@ -98,6 +104,12 @@ qui n’est pas passée à l’arrêt depuis 7 jours est oubliée.
 
 ## Jamais une valeur inventée
 
+- Un flux d’alertes sans heure d’en-tête n’est pas utilisé (son âge est
+  inconnu) : jamais « Aucune alerte » à partir de lui.
+- Un filtre de lignes qui ne correspond à aucun départ montré par 511 à
+  l’arrêt, trois lectures de suite, est signalé dans le statut : vérifiez les
+  noms des lignes.
+
 - Une lecture en échec, une réponse illisible (un départ dont l’heure ne se
   lit pas refuse toute la réponse), une réponse dont l’heure diffère de plus
   de 5 minutes de l’horloge de la machine : **rien n’est publié**, jamais 0 ;
@@ -115,7 +127,9 @@ qui n’est pas passée à l’arrêt depuis 7 jours est oubliée.
 
 Le jeton est gardé par Gladys dans sa base, jamais réaffiché, envoyé
 seulement à 511.org, jamais écrit dans les journaux, le statut ni `/data`.
-Vos arrêts ne sont écrits dans `/data` que sous forme d’empreintes salées.
+Les codes de vos arrêts ne sont écrits dans `/data` que sous forme
+d’empreintes salées ; les identifiants d’opérateur et les lignes vues à un
+arrêt y sont en clair (aucune donnée personnelle).
 
 ## Licence et données
 

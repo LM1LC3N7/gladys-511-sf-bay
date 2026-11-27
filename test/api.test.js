@@ -149,3 +149,17 @@ test('Retry-After: seconds or a date, bounded to 6 h', () => {
   assert.equal(readRetryAfter('soon', at), null);
   assert.equal(readRetryAfter(null, at), null);
 });
+
+test('a redirect is never followed (the token is in the URL)', async (t) => {
+  const target = await serve(t, (req, res) => {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end('{}');
+  });
+  const { base } = await serve(t, (req, res) => {
+    res.writeHead(302, { location: `${target.base}/StopMonitoring?${req.url.split('?')[1]}` });
+    res.end();
+  });
+  const answer = await getJson(`${base}/StopMonitoring?api_key=${KEY}`);
+  assert.equal(answer.ok, false);
+  assert.equal(target.requests.length, 0, 'the second server never sees the token');
+});

@@ -2,9 +2,10 @@
 // Every text of the integration, in English and French: the device names,
 // the departure and alert texts published on the devices, and the status of
 // the configuration screen. A refused field is named by its key, never echoed.
-// The attribution 511 asks for ("data provided by 511.org", 511 Data
-// Disseminator Agreement 5.b) is in the status and, as "511.org", in the
-// feature names, next to the data.
+// The attribution 511 asks for, word for word ("data provided by 511.org",
+// 511 Data Disseminator Agreement 5.b), is in the status and in the name of
+// the first feature of each device, next to the data; the other features end
+// with "(511.org)".
 // -----------------------------------------------------------------------------
 
 import { TIME_ZONE } from './constants.js';
@@ -14,7 +15,10 @@ export const LANGS = ['en', 'fr'];
 const both = (en, fr) => ({ en, fr });
 
 export const NAMES = {
-  next: both('Next departure (511.org)', 'Prochain départ (511.org)'),
+  next: both(
+    'Next departure (data provided by 511.org)',
+    'Prochain départ (data provided by 511.org)',
+  ),
   second: both('Following departure (511.org)', 'Départ suivant (511.org)'),
   departures: both('Departures within 60 min (511.org)', 'Départs dans les 60 min (511.org)'),
   alerts: both('Service alerts (511.org)', 'Alertes de service (511.org)'),
@@ -177,6 +181,8 @@ export function failure(kind, status) {
       );
     case 'no_date':
       return both('answer without a time', 'réponse sans heure');
+    case 'undated':
+      return both('alerts feed without a time', 'flux d’alertes sans heure');
     case 'stale':
       return both('alerts feed not updated', 'flux d’alertes pas à jour');
     case 'paused':

@@ -82,6 +82,8 @@ const TIMER_MAX = HOUR;
 /** A round due within this is run now (a timer may fire a little early). */
 const DUE_SLACK = SECOND;
 const QUOTA_KEEP_MAX = 2000;
+/** Reads in a row without any visit of the filtered lines before the status warns. */
+const FILTER_MISS_WARN = 3;
 
 const isTime = (value) => Number.isFinite(value) && value > 0;
 const NO_PAUSE = () => ({ until: null, kind: null, status: null, level429: 0, level5xx: 0 });
@@ -113,6 +115,10 @@ export function departuresAt(visits, stop, at) {
 /** The departures within the counter window (60 min). */
 export const countWithin = (departures, at) =>
   departures.filter((d) => d.time - at <= WINDOW_MINUTES * MINUTE).length;
+
+/** The wait before the next alerts read after `level` failures in a row (0: the interval). */
+export const alertsDelay = (every, level) =>
+  level <= 0 ? every : Math.min(every * 2 ** (level - 1), Math.max(every, ALERTS_RETRY_MAX));
 
 export class SfBayApp {
   constructor({
@@ -156,6 +162,8 @@ export class SfBayApp {
     this.alertsDue = new Map();
     /** Per stop (agency|code): the monotonic time before which it is not read (400, 404). */
     this.stopRetry = new Map();
+    /** Per stop: reads in a row whose visits match none of the filtered lines. */
+    this.filterMiss = new Map();
     /** Per slot: `{ key, dep, alerts }`, what the status tells. */
     this.results = new Map();
     /** The full hash of a token 511 refused in this process (memory only). */
@@ -167,7 +175,7 @@ export class SfBayApp {
 
     this.loaded = false;
     this.storeStatus = 'absent';
-    this.persisted = { stops: {}, alertsAt: {} };
+    this.persisted = { stops: {}, alertsAt: {}, alertsLevel: {} };
     /** Whether /data tells the requests sent before this start (null: not known yet). */
     this.dataTells = null;
     this.saveFailed = false;
@@ -374,7 +382,7 @@ export class SfBayApp {
     const mono = this.monotonic();
     const depEvery = this.plan.depEvery * MINUTE;
     const alertsEvery = (this.plan.alertsEvery ?? 0) * MINUTE;
-    const stopsKey = JSON.stringify([config.stops, this.plan, config.alerts]);
+    const stopsKey = JSON.stringify([config.stops, this.plan, config.alerts, this.keyHash]);
     const changed = this.lastStopsKey !== null && this.lastStopsKey !== stopsKey;
     const first = this.lastStopsKey === null;
     this.lastStopsKey = stopsKey;
@@ -403,8 +411,12 @@ export class SfBayApp {
     if (config.alerts) {
       for (const agency of agencies) {
         if (this.alertsDue.has(agency)) continue;
-        const dueMono = first ? dueFrom(this.persisted.alertsAt[agency], alertsEvery) : mono;
-        this.alertsDue.set(agency, { dueMono, level: 0 });
+        // After a restart: the attempt in /data plus its back-off (failures in a row).
+        const level = first ? (this.persisted.alertsLevel[agency] ?? 0) : 0;
+        const dueMono = first
+          ? dueFrom(this.persisted.alertsAt[agency], alertsDelay(alertsEvery, level))
+          : mono;
+        this.alertsDue.set(agency, { dueMono, level });
       }
     }
     const pause = this.persisted.pause;
@@ -447,7 +459,7 @@ export class SfBayApp {
       );
     }
     const data = result.data && typeof result.data === 'object' ? result.data : {};
-    const persisted = { stops: {}, alertsAt: {}, refused: null };
+    const persisted = { stops: {}, alertsAt: {}, alertsLevel: {}, refused: null };
     persisted.salt =
       typeof data.salt === 'string' && /^[0-9a-f]{32}$/.test(data.salt)
         ? data.salt
@@ -456,6 +468,18 @@ export class SfBayApp {
     if (data.alertsAt && typeof data.alertsAt === 'object') {
       for (const [agency, at] of Object.entries(data.alertsAt).slice(0, 20)) {
         if (/^[A-Z0-9]{1,10}$/.test(agency) && isTime(at)) persisted.alertsAt[agency] = at;
+      }
+    }
+    if (data.alertsLevel && typeof data.alertsLevel === 'object') {
+      for (const [agency, level] of Object.entries(data.alertsLevel).slice(0, 20)) {
+        if (
+          /^[A-Z0-9]{1,10}$/.test(agency) &&
+          Number.isInteger(level) &&
+          level >= 0 &&
+          level <= 10
+        ) {
+          persisted.alertsLevel[agency] = level;
+        }
       }
     }
     if (data.pause && typeof data.pause === 'object') {
@@ -626,7 +650,7 @@ export class SfBayApp {
    * budget (waiting up to 2 min for a slot, else skipped). The request is
    * counted and /data written before it leaves. `null` when stopped meanwhile.
    */
-  async call(url, gen, { pausing = false } = {}) {
+  async call(url, gen, { pausing = false, beforeSend = null } = {}) {
     for (;;) {
       if (gen !== this.gen) return null;
       if (this.inflight) {
@@ -649,6 +673,8 @@ export class SfBayApp {
       // Counted before it leaves, and in /data before it leaves.
       this.quota.take(mono);
       this.lastRequestMono = mono;
+      // What a restart must know of this request (its time) goes to /data with it.
+      beforeSend?.();
       break;
     }
     const job = (async () => {
@@ -783,6 +809,7 @@ export class SfBayApp {
         continue;
       }
       if (read.visits.length > 0) this.learn(stop, read.visits);
+      this.checkFilter(stop, read.visits);
       const departures = departuresAt(read.visits, stop, at);
       // "No departure" only for a stop where 511 has shown a visit once: a
       // mistyped code reads as an empty stop.
@@ -802,6 +829,25 @@ export class SfBayApp {
       return 'clock';
     }
     return null;
+  }
+
+  /**
+   * A line filter that matches none of the visits 511 shows at the stop, read
+   * after read, is probably mistyped: the status says so (the texts would say
+   * "no departure" forever otherwise).
+   */
+  checkFilter(stop, visits) {
+    const key = this.stopKey(stop);
+    if (stop.lines.length === 0) {
+      this.filterMiss.delete(key);
+      return;
+    }
+    const wanted = new Set(stop.lines.map((l) => l.toLowerCase()));
+    const matched = visits.some(
+      (v) => wanted.has(v.line.toLowerCase()) || wanted.has(v.lineName.toLowerCase()),
+    );
+    if (matched) this.filterMiss.delete(key);
+    else if (visits.length > 0) this.filterMiss.set(key, (this.filterMiss.get(key) ?? 0) + 1);
   }
 
   async onDepartures(stop, departures, at) {
@@ -863,15 +909,25 @@ export class SfBayApp {
       this.alertsDue.set(agency, { ...this.alertsDue.get(agency), dueMono: this.retryAt(start) });
       return;
     }
-    const answer = await this.call(alertsUrl(this.config.key, agency, this.apiBase), gen);
-    if (answer === null || gen !== this.gen) return;
     const every = this.plan.alertsEvery * MINUTE;
+    // The time of the attempt and the back-off reach /data before the request
+    // leaves: a restart (even in a loop) never reads these alerts sooner.
+    const answer = await this.call(alertsUrl(this.config.key, agency, this.apiBase), gen, {
+      beforeSend: () => {
+        this.persisted.alertsAt[agency] = this.now();
+        this.persisted.alertsLevel[agency] = Math.min(
+          (this.alertsDue.get(agency)?.level ?? 0) + 1,
+          10,
+        );
+      },
+    });
+    if (answer === null || gen !== this.gen) return;
     const failed = (kind, status) => {
       const due = this.alertsDue.get(agency);
       if (kind !== 'paused' && kind !== 'quota') {
         const level = Math.min((due?.level ?? 0) + 1, 10);
-        const delay = Math.min(every * 2 ** (level - 1), Math.max(every, ALERTS_RETRY_MAX));
-        this.alertsDue.set(agency, { dueMono: start + delay, level });
+        this.alertsDue.set(agency, { dueMono: start + alertsDelay(every, level), level });
+        this.persisted.alertsLevel[agency] = level;
       } else this.alertsDue.set(agency, { level: due?.level ?? 0, dueMono: this.retryAt(start) });
       this.logger.warn(`Agency ${agency}: alerts not read (${kind})`);
       for (const stop of known) this.recordFailure(stop, 'alerts', { kind, status });
@@ -880,7 +936,6 @@ export class SfBayApp {
       failed(answer.kind, answer.status);
       return;
     }
-    this.persisted.alertsAt[agency] = this.now();
     const read = readAlerts(answer.json, this.config.language);
     if (!read || read.unreadable) {
       failed(read ? 'unreadable' : 'format');
@@ -892,11 +947,17 @@ export class SfBayApp {
       failed(fresh);
       return;
     }
-    if (read.at !== null && at - read.at > ALERTS_STALE) {
+    // A feed of unknown age (no header time) is never "no alert".
+    if (read.at === null) {
+      failed('undated');
+      return;
+    }
+    if (at - read.at > ALERTS_STALE) {
       failed('stale');
       return;
     }
     this.alertsDue.set(agency, { dueMono: start + every, level: 0 });
+    this.persisted.alertsLevel[agency] = 0;
     for (const stop of known) {
       if (gen !== this.gen) return;
       const alerts = alertsForStop(read.alerts, stop, this.linesOf(stop), at);
@@ -1006,9 +1067,17 @@ export class SfBayApp {
         const why = failure(value.kind, value.status);
         return { en: `${why.en}${since.en}`, fr: `${why.fr}${since.fr}` };
       };
+      const misses = this.filterMiss.get(this.stopKey(stop)) ?? 0;
+      const filterWarning =
+        misses >= FILTER_MISS_WARN
+          ? {
+              en: ` (none of the filtered lines in the last ${misses} reads: check the line filter)`,
+              fr: ` (aucune des lignes filtrées dans les ${misses} dernières lectures : vérifiez le filtre de lignes)`,
+            }
+          : { en: '', fr: '' };
       const dep = part(result?.dep, (v) => ({
-        en: `read ${formatClock(v.readAt)}, ${v.count} within 60 min`,
-        fr: `lu à ${formatClock(v.readAt)}, ${v.count} dans les 60 min`,
+        en: `read ${formatClock(v.readAt)}, ${v.count} within 60 min${filterWarning.en}`,
+        fr: `lu à ${formatClock(v.readAt)}, ${v.count} dans les 60 min${filterWarning.fr}`,
       }));
       const alerts = config.alerts
         ? part(result?.alerts, (v) => ({

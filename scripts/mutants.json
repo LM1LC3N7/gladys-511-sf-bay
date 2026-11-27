@@ -122,13 +122,13 @@
   {
     "name": "a failed alerts read is spaced out, doubled",
     "file": "src/app.js",
-    "from": "const delay = Math.min(every * 2 ** (level - 1), Math.max(every, ALERTS_RETRY_MAX));",
-    "to": "const delay = every;"
+    "from": "Math.min(every * 2 ** (level - 1), Math.max(every, ALERTS_RETRY_MAX));",
+    "to": "every;"
   },
   {
     "name": "a stale alerts feed is not used",
     "file": "src/app.js",
-    "from": "if (read.at !== null && at - read.at > ALERTS_STALE) {",
+    "from": "if (at - read.at > ALERTS_STALE) {",
     "to": "if (false) {"
   },
   {
@@ -268,5 +268,41 @@
     "file": "src/app.js",
     "from": "return Math.max(start + MINUTE, this.depDueMono ?? 0);",
     "to": "return start;"
+  },
+  {
+    "name": "alerts: attempt and back-off in /data before the request",
+    "file": "src/app.js",
+    "from": "      beforeSend?.();\n",
+    "to": "\n"
+  },
+  {
+    "name": "alerts: back-off level read back after a restart",
+    "file": "src/app.js",
+    "from": "const level = first ? (this.persisted.alertsLevel[agency] ?? 0) : 0;",
+    "to": "const level = 0;"
+  },
+  {
+    "name": "alerts: a feed without a time is not used",
+    "file": "src/app.js",
+    "from": "if (read.at === null) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "a mistyped line filter is said",
+    "file": "src/app.js",
+    "from": "misses >= FILTER_MISS_WARN",
+    "to": "false"
+  },
+  {
+    "name": "a new token is read at once",
+    "file": "src/app.js",
+    "from": "config.alerts, this.keyHash]);",
+    "to": "config.alerts]);"
+  },
+  {
+    "name": "a redirect is never followed",
+    "file": "src/api.js",
+    "from": "redirect: 'error',",
+    "to": "redirect: 'follow',"
   }
 ]

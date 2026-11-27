@@ -209,6 +209,13 @@ test('the published devices follow the core rules (supported_options, units, ran
       assert.ok(Number.isFinite(feature.min) && Number.isFinite(feature.max));
       assert.equal(typeof feature.has_feedback, 'boolean');
       assert.match(feature.name, /511\.org/, 'the attribution next to the data');
+    }
+    assert.match(
+      device.features[0].name,
+      /\(data provided by 511\.org\)$/,
+      'the exact formula (5.b)',
+    );
+    for (const feature of device.features) {
       if (feature.unit && unitsByCategory) {
         assert.ok(unitsByCategory[feature.category]?.includes(feature.unit), feature.external_id);
       }

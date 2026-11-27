@@ -5,10 +5,10 @@
 Data provided by 511.org (https://511.org/). The integration reads, at run time and with the token of each user,
 the transit API of 511 SF Bay Open Data (https://511.org/open-data/transit): StopMonitoring (SIRI, JSON) and
 service alerts (GTFS-Realtime, JSON). Each user requests their own token and accepts the 511 Data Disseminator
-Agreement (https://511.org/sites/default/files/pdfs/511_Data_Agreement_Final.pdf, read on 2026-11-27): a
+Agreement (https://511.org/sites/default/files/2026-04/511_Data_Agreement_Final_2026.pdf, version 2026, read on 2026-11-27): a
 non-exclusive, royalty-free license to use, store and display the data (section 1), the acknowledgement "data
-provided by 511.org" with a link to 511.org next to the data (section 5.b: in the feature names, the status, the
-configuration screen and the documentation), no logo or mark of the operators (section 2.f, 5.d), no "511" in the
+provided by 511.org" with a link to 511.org next to the data (section 5.b: word for word in the name of the first feature of each device, the status, the
+configuration screen and the documentation), no logo or mark of the operators (sections 2.e and 5.d), no "511" in the
 name or branding of the product (section 5.c), no warranty (section 3). The integration is not endorsed by 511,
 MTC nor any operator, and it is not an official source.
 

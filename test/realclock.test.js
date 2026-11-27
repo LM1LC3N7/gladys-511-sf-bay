@@ -34,13 +34,16 @@ test('the departures every 3 minutes on the real clock (x600): 2 stops at 2 min 
     clock.close();
   });
   const spy = spyOn(app, 'readDepartures', clock);
+  const takes = spyOn(app.quota, 'take', clock);
   await app.start(config);
   assert.equal(app.plan.depEvery, 3, '2 stops every 2 min would be 60 requests an hour');
   const gaps = await measurePeriod(spy, { count: 4, period: 180_000, timeoutMs: 10_000 });
   assert.equal(gaps.length, 3);
-  const starts = api.calls.map((c) => c.at);
+  // The decision times of the requests (the fetch itself comes after the
+  // /data write, whose latency at x600 blurs the gaps).
+  const starts = takes.calls.map((c) => c.args[0]);
   const between = starts.slice(1).map((v, i) => v - starts[i]);
-  assert.ok(Math.min(...between) >= 2000 - 50, `requests ${between.join(', ')} ms apart`);
+  assert.ok(Math.min(...between) >= 2000, `requests ${between.join(', ')} ms apart`);
   await app.stop();
   const before = api.calls.length;
   await clock.sleep(10 * 60_000);

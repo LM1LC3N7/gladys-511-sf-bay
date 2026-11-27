@@ -62,8 +62,10 @@ request: type your limit in **Hourly limit of your token**). The integration:
   tell it (unreadable file), the first reads wait one interval;
 - stops every read when 511 answers **429**: for the time it asks, 10
   minutes at least (doubled on the next ones), 6 hours at most, kept across a restart;
-  a **5xx** of the departures pauses the reads 2 minutes (doubled, 6 hours at
-  most).
+  a **5xx** or another refusal of the departures (403...) pauses every read 2
+  minutes (doubled, 6 hours at most); a failed alerts read waits 15 minutes,
+  then 30, 60, 120 for that operator only, also across a restart (the time of
+  the attempt is written to `/data` before the request leaves).
 
 Discovery, the **Show the last reads** button and saving an unchanged
 configuration never read 511 (saving the configuration again only tries
@@ -71,8 +73,10 @@ a token refused before a restart once more).
 
 ## What each device holds
 
-The feature names end with "(511.org)": the attribution 511 asks for, next
-to the data.
+The name of the **Next departure** feature ends with "(data provided by
+511.org)", the others with "(511.org)": the attribution 511 asks for, next to
+the data. The minutes of a text are counted at the time of the read: with a
+long interval, read the clock time (`10:03`), which stays right.
 
 - **Next departure** and **Following departure**: texts with the line, the
   destination, the minutes to wait (counted against the time of the 511
@@ -94,6 +98,11 @@ the stop for 7 days is forgotten.
 
 ## Never a made-up value
 
+- An alerts feed without a header time is not used (its age is unknown): no
+  "No alert" from it.
+- A line filter that matches none of the departures 511 shows at the stop,
+  three reads in a row, is said in the status: check the line names.
+
 - A read that failed, an answer that cannot be read (one departure whose time
   cannot be read refuses the whole answer), an answer whose time differs from
   the clock of the machine by more than 5 minutes: **nothing is published**,
@@ -110,8 +119,9 @@ the stop for 7 days is forgotten.
 ## Privacy
 
 The token is kept by Gladys in its database, never shown again, sent only to
-511.org, never written in the logs, the status nor `/data`. Your stops are
-written to `/data` only as salted fingerprints.
+511.org, never written in the logs, the status nor `/data`. Your stop codes are
+written to `/data` only as salted fingerprints; the operator ids and the lines
+seen at a stop are written in clear (no personal data).
 
 ## Licence and data
 
